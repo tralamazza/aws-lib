@@ -1,6 +1,8 @@
 var aws = require("../lib/aws");
-var eyes = require('eyes');
 var optimist = require('optimist');
+var inspect = require('eyes').inspector({
+  maxLength: 1024 * 32
+});
 
 var argv = optimist
   .usage('Usage: $0 [--key=<aws key>] [--secret=<aws secret>] [--kpId=<Key-Pair-Id>] [--kpFile=<filename>] COMMAND')
@@ -19,27 +21,27 @@ var cfront = aws.createCloudFrontClient(argv.key, argv.secret);
 
 if (argv._[0] === 'distr') {
   if (argv._[1])
-    cfront.get('/distribution/' + argv._[1], {}, function(err, result) { eyes.inspect(result); });
+    cfront.get('/distribution/' + argv._[1], {}, function(err, result) { inspect(result); });
   else
-    cfront.get('/distribution', {}, function(err, result) { eyes.inspect(result); });
+    cfront.get('/distribution', {}, function(err, result) { inspect(result); });
 } else if (argv._[0] === 'origins') {
   if (argv._[1] === 'new') {
     var payload = { CloudFrontOriginAccessIdentityConfig: { CallerReference: +new Date(), Comment: 'aws-lib' } };
     cfront.post('/origin-access-identity/cloudfront', payload, function(err, result) {
-      eyes.inspect(result);
+      inspect(result);
     });
   } else {
     cfront.get('/origin-access-identity/cloudfront', {}, function(err, result) {
-      eyes.inspect(result);
+      inspect(result);
       if (argv._[1] === 'clear') {
         cfront.get('/origin-access-identity/cloudfront', {}, function(err, result) {
-          eyes.inspect(result);
+          inspect(result);
 
           function remove(id) {
             cfront.get('/origin-access-identity/cloudfront/' + oaid.Id, {}, function(err, rslt_oaid, res) {
-              eyes.inspect(rslt_oaid);
+              inspect(rslt_oaid);
               cfront.del('/origin-access-identity/cloudfront/' + oaid.Id, { 'If-Match': res.headers.etag }, {}, function(err, rslt_del) {
-                eyes.inspect(rslt_del);
+                inspect(rslt_del);
               });
             });
           }
@@ -64,7 +66,7 @@ if (argv._[0] === 'distr') {
       Items: { AwsAccountNumber: 'self' }
     };
     cfront.put('/distribution/' + id + '/config', { 'If-Match': etag }, config, function(err, result_put) {
-      eyes.inspect(result_put);
+      inspect(result_put);
     });
   });
 } else if (argv._[0] === 'sign' && argv._[1]) {
