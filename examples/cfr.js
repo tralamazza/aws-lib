@@ -19,7 +19,26 @@ var argv = optimist
 
 var cfront = aws.createCloudFrontClient(argv.key, argv.secret);
 
-if (argv._[0] === 'distr') {
+if (argv._[0] === 'config') {
+  var id = argv._[1];
+  cfront.get('/distribution/' + id + '/config', {}, function(err, result, res) {
+    inspect(result);
+    if (argv._[2]) {
+      var oai = argv._[2];
+      var etag = res.headers.etag;
+      delete result['@'];
+      if (result.Origins.Quantity == 0) { console.log('no origins'); exit(1); }
+      else if (result.Origins.Quantity == 1) {
+        result.Origins.Items.Origin.S3OriginConfig.OriginAccessIdentity = 'origin-access-identity/cloudfront/' + oai;
+      }
+      var config = { DistributionConfig: result };
+      inspect(config);
+      cfront.put('/distribution/' + id + '/config', { 'If-Match': etag }, config, function(err, result_put) {
+        inspect(result_put);
+      });
+    }
+  });
+} else if (argv._[0] === 'distr') {
   if (argv._[1])
     cfront.get('/distribution/' + argv._[1], {}, function(err, result) { inspect(result); });
   else
